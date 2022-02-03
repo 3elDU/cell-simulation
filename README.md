@@ -19,6 +19,10 @@ Evolution simulation, written in C
 - L - load simulation from the file.
 - Space - pause/unpause
 - R - reload the map
+- 1 - energy rendering more ( more energy - more yellow )
+- 2 - relatives rendering more ( relaives have similar color. it changes a bit with each mutation )
+- 3 - age rendering mode ( more age - more blue )
+- 4 - energy source rendering mode ( red - eating other cells, green - photosynthesis, light blue - dead cells, white - mixed )
 
 ### Code architecture
 Some variables can be configured at compile-time. They are located in `src/defines.h`.
