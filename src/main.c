@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include <time.h>
+#include <sys/time.h>
 
 #include "cells.h"
 #include "defines.h"
@@ -123,7 +123,10 @@ int main(int argc, char *argv[]) {
 	// main loop
 	bool exit = false;
 	bool paused = false;
+	struct timeval frame_start, frame_end;
 	while (!exit) {
+		// measure time at the beginning of frame
+		gettimeofday(&frame_start, NULL);
 
 		// handle events
 		SDL_Event e;
@@ -235,12 +238,18 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		printf("[ %llu ] Alive cells: %u\n", iterations, CELLS_CountAliveCells(state));
-
 		if (!paused) CELLS_Update(state);
 
 		// update the screen
 		SDL_RenderPresent(ren);
+
+		gettimeofday(&frame_end, NULL);
+		int fps = 1.f / ((frame_end.tv_usec - frame_start.tv_usec) / 1000000.f);
+		if (fps == -1) { // sometimes this happens, fps is reported as -1 for some reason
+			fps = 0;
+		}
+
+		printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, CELLS_CountAliveCells(state));
 
 		if (paused)
 			SDL_Delay(100); // run at 10 frames per second

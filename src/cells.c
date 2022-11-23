@@ -59,7 +59,6 @@ void CELLS_UpdateCell(struct CELLS_State* state, struct CELLS_Cell cell) {
 	bool suicide = false;
 
 	if (cell.alive) {
-
 		unsigned nextInstruction = cell.currentInstruction + 1;
 		float consumedEnergy = NOOP_COST;
 
@@ -119,11 +118,12 @@ void CELLS_UpdateCell(struct CELLS_State* state, struct CELLS_Cell cell) {
 				break;
 
 			case SWAP_PLACES:
-				struct CELLS_Cell* cellInFront = CELLS_GetCell(state, facingX, facingY);
+				frontCell = CELLS_GetCell(state, facingX, facingY);
 
-				cellInFront->x = cell.x, cellInFront->y = cell.y;
+				frontCell->x = cell.x;
+				frontCell->y = cell.y;
 
-				CELLS_SetCell(state, cell.x, cell.y, *cellInFront);
+				CELLS_SetCell(state, cell.x, cell.y, *frontCell);
 
 				cell.x = facingX, cell.y = facingY;
 
@@ -230,7 +230,7 @@ void CELLS_UpdateCell(struct CELLS_State* state, struct CELLS_Cell cell) {
 				break;
 
 
-			case JMP_IF_FACING_RELATIVE:
+			case JMP_IF_FACING_RELATIVE: {
 				// checking genome similarity
 				unsigned similarGenes = 0;
 
@@ -254,6 +254,7 @@ void CELLS_UpdateCell(struct CELLS_State* state, struct CELLS_Cell cell) {
 				// printf("%u similar genes, %f similarity, required %f\n", similarGenes, genomeSimilarity, cell.genome[cell.currentInstruction].cx);
 
 				break;
+			}
 
 
 			case SUICIDE:
