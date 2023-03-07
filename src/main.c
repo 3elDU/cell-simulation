@@ -260,25 +260,25 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (!paused)
-			CELLS_Update(state);
-
 		// update the screen
 		SDL_RenderPresent(ren);
 
-		gettimeofday(&frame_end, NULL);
-		int fps = 1.f / ((frame_end.tv_usec - frame_start.tv_usec) / 1000000.f);
-		if (fps == -1)
-		{ // sometimes this happens, fps is reported as -1 for some reason
-			fps = 0;
+		if (!paused)
+		{
+			CELLS_Update(state);
+			iterations++;
+
+			gettimeofday(&frame_end, NULL);
+			int fps = 1.f / ((frame_end.tv_usec - frame_start.tv_usec) / 1000000.f);
+			if (fps == -1)
+			{ // sometimes this happens, fps is reported as -1 for some reason
+				fps = 0;
+			}
+
+			printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, CELLS_CountAliveCells(state));
 		}
-
-		printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, CELLS_CountAliveCells(state));
-
-		if (paused)
-			SDL_Delay(100); // run at 10 frames per second
-
-		iterations++;
+		else
+			SDL_Delay(100); // when on pause, run at 10 frames per second
 	}
 
 	CELLS_Quit(state);
