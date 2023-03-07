@@ -111,6 +111,62 @@ bool quit()
 	IMG_Quit();
 }
 
+void render(struct cells_state *state, enum RENDERING_MODE renderingMode)
+{
+	// clear the screen with black color
+	SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+	SDL_RenderClear(ren);
+
+	// render the map
+	for (int i = 0; i < SIMULATION_WIDTH; i++)
+	{
+		for (int j = 0; j < SIMULATION_HEIGHT; j++)
+		{
+
+			struct cell *cell = cells_get_cell(state, i, j);
+
+			if (cell->empty)
+				continue;
+
+			unsigned r, g, b;
+
+			if (cell->alive)
+			{
+
+				if (renderingMode == RENDER_RELATIVES)
+					r = cell->r, g = cell->g, b = cell->b;
+				else if (renderingMode == RENDER_ENERGY)
+					r = 30 + cell->energy, g = r, b = 0;
+				else if (renderingMode == RENDER_AGE)
+					r = 0, g = 0, b = 50 + 255.f * ((float)cell->age / (float)CELL_MAX_AGE);
+				else if (renderingMode == RENDER_ENERGY_SOURCE)
+					if (cell->attackCount > cell->photosynthesisCount && cell->attackCount > cell->eatingDeadCount)
+						r = 255, g = 0, b = 0;
+					else if (cell->photosynthesisCount > cell->attackCount && cell->photosynthesisCount > cell->eatingDeadCount)
+						r = 0, g = 255, b = 0;
+					else if (cell->eatingDeadCount > cell->attackCount && cell->eatingDeadCount > cell->photosynthesisCount)
+						r = 0, g = 255, b = 255;
+					else
+						r = 255, g = 255, b = 255;
+			}
+			else
+			{
+				r = 70, g = 70, b = 70;
+			}
+
+			r = util_clamp(r, 0, 255);
+			g = util_clamp(g, 0, 255);
+			b = util_clamp(b, 0, 255);
+
+			SDL_SetRenderDrawColor(ren, r, g, b, 255);
+			SDL_Rect fillRect = {i * CELL_WIDTH, j * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT};
+			SDL_RenderFillRect(ren, &fillRect);
+		}
+	}
+
+	SDL_RenderPresent(ren);
+}
+
 int main(int argc, char *argv[])
 {
 	// initialize random
@@ -130,7 +186,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	enum RENDERING_MODE currentRenderingMode = RENDER_RELATIVES;
+	enum RENDERING_MODE renderingMode = RENDER_RELATIVES;
 
 	long long unsigned iterations = 0;
 
@@ -176,19 +232,19 @@ int main(int argc, char *argv[])
 					break;
 
 				case SDLK_1:
-					currentRenderingMode = RENDER_ENERGY;
+					renderingMode = RENDER_ENERGY;
 					break;
 
 				case SDLK_2:
-					currentRenderingMode = RENDER_RELATIVES;
+					renderingMode = RENDER_RELATIVES;
 					break;
 
 				case SDLK_3:
-					currentRenderingMode = RENDER_AGE;
+					renderingMode = RENDER_AGE;
 					break;
 
 				case SDLK_4:
-					currentRenderingMode = RENDER_ENERGY_SOURCE;
+					renderingMode = RENDER_ENERGY_SOURCE;
 					break;
 
 				case SDLK_s:
@@ -215,59 +271,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		// clear the screen with black color
-		SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
-		SDL_RenderClear(ren);
-
-		// render the map
-		for (int i = 0; i < SIMULATION_WIDTH; i++)
-		{
-			for (int j = 0; j < SIMULATION_HEIGHT; j++)
-			{
-
-				struct cell *cell = cells_get_cell(state, i, j);
-
-				if (cell->empty)
-					continue;
-
-				unsigned r, g, b;
-
-				if (cell->alive)
-				{
-
-					if (currentRenderingMode == RENDER_RELATIVES)
-						r = cell->r, g = cell->g, b = cell->b;
-					else if (currentRenderingMode == RENDER_ENERGY)
-						r = 30 + cell->energy, g = r, b = 0;
-					else if (currentRenderingMode == RENDER_AGE)
-						r = 0, g = 0, b = 50 + 255.f * ((float)cell->age / (float)CELL_MAX_AGE);
-					else if (currentRenderingMode == RENDER_ENERGY_SOURCE)
-						if (cell->attackCount > cell->photosynthesisCount && cell->attackCount > cell->eatingDeadCount)
-							r = 255, g = 0, b = 0;
-						else if (cell->photosynthesisCount > cell->attackCount && cell->photosynthesisCount > cell->eatingDeadCount)
-							r = 0, g = 255, b = 0;
-						else if (cell->eatingDeadCount > cell->attackCount && cell->eatingDeadCount > cell->photosynthesisCount)
-							r = 0, g = 255, b = 255;
-						else
-							r = 255, g = 255, b = 255;
-				}
-				else
-				{
-					r = 70, g = 70, b = 70;
-				}
-
-				r = util_clamp(r, 0, 255);
-				g = util_clamp(g, 0, 255);
-				b = util_clamp(b, 0, 255);
-
-				SDL_SetRenderDrawColor(ren, r, g, b, 255);
-				SDL_Rect fillRect = {i * CELL_WIDTH, j * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT};
-				SDL_RenderFillRect(ren, &fillRect);
-			}
-		}
-
-		// update the screen
-		SDL_RenderPresent(ren);
+		render(state, renderingMode);
 
 		if (!paused)
 		{
