@@ -381,11 +381,6 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 	CELLS_SetCell(state, cell.x, cell.y, cell);
 }
 
-unsigned CELLS_ConvertCoords(const struct CELLS_State *state, const unsigned x, const unsigned y)
-{
-	return y * state->width + x;
-}
-
 // returns NULL if fails
 struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height)
 {

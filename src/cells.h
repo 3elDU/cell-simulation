@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include "defines.h"
 
+#define CELLS_ConvertCoords(state, x, y) y * state->width + x
+
 enum CELLS_GenCommand
 {
 
@@ -122,12 +124,6 @@ struct CELLS_State
 
 // updates given cell
 void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell);
-
-/*
-	our field is 2-dimensional, but internally, it's just 1-dimensional array
-	so we need to convert coordinates, before assigning values
-*/
-unsigned CELLS_ConvertCoords(const struct CELLS_State *state, const unsigned x, const unsigned y);
 
 // Returns NULL if fails
 struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height);
