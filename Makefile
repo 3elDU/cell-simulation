@@ -1,5 +1,6 @@
 CC = gcc
 
+CFLAGS	= -O2
 LDFLAGS = -lSDL2 -lSDL2_image
 
 SOURCES = src/*
