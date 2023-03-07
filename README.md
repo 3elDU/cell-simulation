@@ -1,18 +1,22 @@
 # Cell evolution
+
 Evolution simulation, written in C
 
 ### Dependencies
 - SDL2
+- SDL2_image
 
 ### Platforms
 - Linux
-- Probably works on Macos
-- ~Windows~
+- macOS
 
-### Building
-- `git clone https://github.com/3elDU/cell-simulation.git`
-- `cd cell-simulation`
-- `make`
+### Building and running
+```sh
+git clone https://github.com/3elDU/cell-simulation.git
+cd cell-simulation
+make
+./cells
+```
 
 ### Keys
 - S - save simulation to the file ( save.bin by default, but you can change it in main.c )
