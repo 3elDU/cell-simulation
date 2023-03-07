@@ -5,8 +5,9 @@
 #include <stdint.h>
 #include "defines.h"
 
-enum CELLS_GenCommand {
-	
+enum CELLS_GenCommand
+{
+
 	// do nothing
 	NOOP,
 
@@ -58,26 +59,29 @@ enum CELLS_GenCommand {
 	MAKE_CHILD
 };
 
-enum CELLS_Direction {
+enum CELLS_Direction
+{
 	LEFT,
 	UP,
 	RIGHT,
 	DOWN
 };
 
-struct CELLS_Instruction {
+struct CELLS_Instruction
+{
 	enum CELLS_GenCommand command;
 
 	// those are "arguments" for main instruction
 	unsigned ax; // value from 0 to 128
 	unsigned bx; // value from 0 to 63
-	float cx; // floating point value from 0.0 to 100.0
+	float cx;	 // floating point value from 0.0 to 100.0
 };
 
 // returns randomly generated instruction
 struct CELLS_Instruction CELLS_GenerateInstruction();
 
-struct CELLS_Cell {
+struct CELLS_Cell
+{
 	struct CELLS_Instruction genome[GENOME_LENGTH];
 	unsigned currentInstruction;
 
@@ -107,45 +111,46 @@ struct CELLS_Cell CELLS_GenerateCell(const unsigned x, const unsigned y);
 struct CELLS_Cell CELLS_GenerateEmptyCell(const unsigned x, const unsigned y);
 
 // independent cell simulation
-struct CELLS_State {
+struct CELLS_State
+{
 	unsigned width;
 	unsigned height;
 
-	struct CELLS_Cell* cells;
-	unsigned* updateOrder;
+	struct CELLS_Cell *cells;
+	unsigned *updateOrder;
 };
 
 // updates given cell
-void CELLS_UpdateCell(struct CELLS_State* state, struct CELLS_Cell cell);
+void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell);
 
-/* 
+/*
 	our field is 2-dimensional, but internally, it's just 1-dimensional array
-  	so we need to convert coordinates, before assigning values
+	so we need to convert coordinates, before assigning values
 */
-unsigned CELLS_ConvertCoords(const struct CELLS_State* state, const unsigned x, const unsigned y);
+unsigned CELLS_ConvertCoords(const struct CELLS_State *state, const unsigned x, const unsigned y);
 
 // Returns NULL if fails
-struct CELLS_State* CELLS_Init(const unsigned width, const unsigned height);
+struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height);
 
 // Un-allocates memory and sets state to NULL
-void CELLS_Quit(struct CELLS_State* state);
+void CELLS_Quit(struct CELLS_State *state);
 
 // Updates the simulation
-void CELLS_Update(struct CELLS_State* state);
+void CELLS_Update(struct CELLS_State *state);
 
 /*
 	Returns cell at given position.
 	If position is invalid, returns NULL
 */
-struct CELLS_Cell* CELLS_GetCell(const struct CELLS_State* state, const unsigned x, const unsigned y);
+struct CELLS_Cell *CELLS_GetCell(const struct CELLS_State *state, const unsigned x, const unsigned y);
 
 /*
 	Sets cell at given position.
 	If position or CELLS_Cell pointer is invalid, doesn't do anything
 */
-void CELLS_SetCell(struct CELLS_State* state, const unsigned x, const unsigned y, const struct CELLS_Cell cell);
+void CELLS_SetCell(struct CELLS_State *state, const unsigned x, const unsigned y, const struct CELLS_Cell cell);
 
 // returns number of alive cells in given state
-unsigned CELLS_CountAliveCells(const struct CELLS_State* state);
+unsigned CELLS_CountAliveCells(const struct CELLS_State *state);
 
 #endif
