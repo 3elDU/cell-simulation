@@ -5,31 +5,31 @@
 #include <string.h>
 #include <stdio.h>
 
-struct CELLS_Instruction CELLS_GenerateInstruction()
+struct instruction cells_generate_instruction()
 {
-	struct CELLS_Instruction instruction;
+	struct instruction instruction;
 
-	instruction.command = CELLS_Random(0, MAKE_CHILD);
+	instruction.command = util_random(0, MAKE_CHILD);
 
-	instruction.ax = CELLS_Random(0, 128);
-	instruction.bx = CELLS_Random(0, 63);
-	instruction.cx = CELLS_Random(0, 100000) / 1000.f;
+	instruction.ax = util_random(0, 128);
+	instruction.bx = util_random(0, 63);
+	instruction.cx = util_random(0, 100000) / 1000.f;
 
 	return instruction;
 }
 
-struct CELLS_Cell CELLS_GenerateCell(const unsigned x, const unsigned y)
+struct cell cells_generate_cell(const unsigned x, const unsigned y)
 {
-	struct CELLS_Cell cell;
+	struct cell cell;
 
 	// generating genome
 	for (int i = 0; i < GENOME_LENGTH; i++)
 	{
-		cell.genome[i] = CELLS_GenerateInstruction();
+		cell.genome[i] = cells_generate_instruction();
 	}
 
 	cell.currentInstruction = 0;
-	cell.direction = CELLS_Random(0, 3);
+	cell.direction = util_random(0, 3);
 	cell.energy = START_ENERGY;
 	cell.alive = true;
 	cell.empty = false;
@@ -37,16 +37,16 @@ struct CELLS_Cell CELLS_GenerateCell(const unsigned x, const unsigned y)
 
 	cell.x = x, cell.y = y;
 
-	cell.r = CELLS_Random(0, 255);
-	cell.g = CELLS_Random(0, 255);
-	cell.b = CELLS_Random(0, 255);
+	cell.r = util_random(0, 255);
+	cell.g = util_random(0, 255);
+	cell.b = util_random(0, 255);
 
 	return cell;
 }
 
-struct CELLS_Cell CELLS_GenerateEmptyCell(const unsigned x, const unsigned y)
+struct cell cells_generate_empty_cell(const unsigned x, const unsigned y)
 {
-	struct CELLS_Cell cell;
+	struct cell cell;
 
 	cell.alive = false;
 	cell.empty = true;
@@ -57,7 +57,7 @@ struct CELLS_Cell CELLS_GenerateEmptyCell(const unsigned x, const unsigned y)
 	return cell;
 }
 
-void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
+void cells_update_cell(struct cells_state *state, struct cell cell)
 {
 	if (state == NULL)
 		return;
@@ -91,7 +91,7 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 	else if (facingY == state->height)
 		facingY = 0;
 
-	struct CELLS_Cell *frontCell;
+	struct cell *frontCell;
 
 	switch (cell.genome[cell.currentInstruction].command)
 	{
@@ -119,18 +119,18 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 	case MOVE_FORWARDS:
 		// checking if space, where cell wants to move is empty
 		// if it is not, cell won't move
-		if (CELLS_GetCell(state, facingX, facingY)->empty)
+		if (cells_get_cell(state, facingX, facingY)->empty)
 		{
 
-			CELLS_SetCell(state, cell.x, cell.y, CELLS_GenerateEmptyCell(cell.x, cell.y));
+			cells_set_cell(state, cell.x, cell.y, cells_generate_empty_cell(cell.x, cell.y));
 			cell.x = facingX, cell.y = facingY;
 		}
-		else if (!CELLS_GetCell(state, facingX, facingY)->alive)
+		else if (!cells_get_cell(state, facingX, facingY)->alive)
 		{
 			// if space, where cell wants to move is occupied by dead cell, eating it
-			cell.energy += CELLS_GetCell(state, facingX, facingY)->energy;
+			cell.energy += cells_get_cell(state, facingX, facingY)->energy;
 
-			CELLS_SetCell(state, cell.x, cell.y, CELLS_GenerateEmptyCell(cell.x, cell.y));
+			cells_set_cell(state, cell.x, cell.y, cells_generate_empty_cell(cell.x, cell.y));
 			cell.x = facingX, cell.y = facingY;
 
 			cell.eatingDeadCount++;
@@ -141,12 +141,12 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 		break;
 
 	case SWAP_PLACES:
-		frontCell = CELLS_GetCell(state, facingX, facingY);
+		frontCell = cells_get_cell(state, facingX, facingY);
 
 		frontCell->x = cell.x;
 		frontCell->y = cell.y;
 
-		CELLS_SetCell(state, cell.x, cell.y, *frontCell);
+		cells_set_cell(state, cell.x, cell.y, *frontCell);
 
 		cell.x = facingX, cell.y = facingY;
 
@@ -173,7 +173,7 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 
 		cell.energy -= ATTACK_REQUIRED_ENERGY;
 
-		frontCell = CELLS_GetCell(state, facingX, facingY);
+		frontCell = cells_get_cell(state, facingX, facingY);
 
 		if (frontCell->alive)
 		{
@@ -203,7 +203,7 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 
 		cell.energy -= ATTACK_REQUIRED_ENERGY;
 
-		frontCell = CELLS_GetCell(state, facingX, facingY);
+		frontCell = cells_get_cell(state, facingX, facingY);
 
 		if (frontCell->alive)
 		{
@@ -239,19 +239,19 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 		break;
 
 	case JMP_IF_FACING_ALIVE_CELL:
-		if (CELLS_GetCell(state, facingX, facingY)->alive)
+		if (cells_get_cell(state, facingX, facingY)->alive)
 			nextInstruction = cell.genome[cell.currentInstruction].bx;
 
 		break;
 
 	case JMP_IF_FACING_VOID:
-		if (CELLS_GetCell(state, facingX, facingY)->empty)
+		if (cells_get_cell(state, facingX, facingY)->empty)
 			nextInstruction = cell.genome[cell.currentInstruction].bx;
 
 		break;
 
 	case JMP_IF_FACING_DEAD_CELL:
-		if (!CELLS_GetCell(state, facingX, facingY)->alive && !CELLS_GetCell(state, facingX, facingY)->empty)
+		if (!cells_get_cell(state, facingX, facingY)->alive && !cells_get_cell(state, facingX, facingY)->empty)
 			nextInstruction = cell.genome[cell.currentInstruction].bx;
 
 		break;
@@ -261,8 +261,8 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 		// checking genome similarity
 		unsigned similarGenes = 0;
 
-		struct CELLS_Instruction *ours = cell.genome;
-		struct CELLS_Instruction *theirs = CELLS_GetCell(state, facingX, facingY)->genome;
+		struct instruction *ours = cell.genome;
+		struct instruction *theirs = cells_get_cell(state, facingX, facingY)->genome;
 
 		for (int i = 0; i < GENOME_LENGTH; i++)
 		{
@@ -294,10 +294,10 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 			break;
 
 		// checking for available space
-		if (!CELLS_GetCell(state, facingX, facingY)->alive)
+		if (!cells_get_cell(state, facingX, facingY)->alive)
 		{
 
-			struct CELLS_Cell child = {};
+			struct cell child = {};
 
 			child.alive = true;
 			child.empty = false;
@@ -307,7 +307,7 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 
 			child.age = 1;
 
-			child.direction = CELLS_Random(0, 3);
+			child.direction = util_random(0, 3);
 
 			child.r = cell.r, child.g = cell.g, child.b = cell.b;
 
@@ -322,36 +322,36 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 			{
 
 				// mutation can happen
-				if (CELLS_Random(1, 100) <= MUTATION_PERCENT)
+				if (util_random(1, 100) <= MUTATION_PERCENT)
 				{
 					// mutating
-					child.genome[i] = CELLS_GenerateInstruction();
+					child.genome[i] = cells_generate_instruction();
 
 					// changing child's color a bit
-					unsigned colorToChange = CELLS_Random(0, 2);
+					unsigned colorToChange = util_random(0, 2);
 
 					if (colorToChange == 0)
-						child.r += CELLS_Random(-16, 16);
+						child.r += util_random(-16, 16);
 					if (colorToChange == 1)
-						child.g += CELLS_Random(-16, 16);
+						child.g += util_random(-16, 16);
 					if (colorToChange == 2)
-						child.b += CELLS_Random(-16, 16);
+						child.b += util_random(-16, 16);
 				}
 				else
 					child.genome[i] = cell.genome[i];
 			}
 
-			child.r = CELLS_Clamp(child.r, 0, 255);
-			child.g = CELLS_Clamp(child.g, 0, 255);
-			child.b = CELLS_Clamp(child.b, 0, 255);
+			child.r = util_clamp(child.r, 0, 255);
+			child.g = util_clamp(child.g, 0, 255);
+			child.b = util_clamp(child.b, 0, 255);
 
 			// if there's dead cell at child's position, child gets it's energy
-			if (!CELLS_GetCell(state, facingX, facingY)->alive && !CELLS_GetCell(state, facingX, facingY)->empty)
+			if (!cells_get_cell(state, facingX, facingY)->alive && !cells_get_cell(state, facingX, facingY)->empty)
 			{
-				child.energy += CELLS_GetCell(state, facingX, facingY)->energy;
+				child.energy += cells_get_cell(state, facingX, facingY)->energy;
 			}
 
-			CELLS_SetCell(state, facingX, facingY, child);
+			cells_set_cell(state, facingX, facingY, child);
 		}
 
 		break;
@@ -378,21 +378,20 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 
 	cell.age++;
 
-	CELLS_SetCell(state, cell.x, cell.y, cell);
+	cells_set_cell(state, cell.x, cell.y, cell);
 }
 
 // returns NULL if fails
-struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height)
+struct cells_state *cells_init(const unsigned width, const unsigned height)
 {
-
-	struct CELLS_State *state = calloc(1, sizeof(struct CELLS_State));
+	struct cells_state *state = calloc(1, sizeof(struct cells_state));
 	if (state == NULL)
 		goto failed;
 
 	state->width = width;
 	state->height = height;
 
-	state->cells = calloc(width * height, sizeof(struct CELLS_Cell));
+	state->cells = calloc(width * height, sizeof(struct cell));
 	if (state->cells == NULL)
 		goto failed;
 
@@ -407,10 +406,10 @@ struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height)
 		{
 
 			// every 5th pixel has a cell in it
-			if (CELLS_Random(1, 5) == 1)
-				CELLS_SetCell(state, i, j, CELLS_GenerateCell(i, j));
+			if (util_random(1, 5) == 1)
+				cells_set_cell(state, i, j, cells_generate_cell(i, j));
 			else
-				CELLS_SetCell(state, i, j, CELLS_GenerateEmptyCell(i, j));
+				cells_set_cell(state, i, j, cells_generate_empty_cell(i, j));
 		}
 	}
 
@@ -419,7 +418,7 @@ struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height)
 	{
 		state->updateOrder[i] = i;
 	}
-	CELLS_Shuffle(state->updateOrder, state->width * state->height, state->width * state->height * 2);
+	util_shuffle(state->updateOrder, state->width * state->height, state->width * state->height * 2);
 
 	return state;
 
@@ -430,7 +429,7 @@ failed:
 	return NULL;
 }
 
-void CELLS_Quit(struct CELLS_State *state)
+void cells_quit(struct cells_state *state)
 {
 	free(state->cells);
 	free(state->updateOrder);
@@ -439,18 +438,18 @@ void CELLS_Quit(struct CELLS_State *state)
 	state = NULL;
 }
 
-void CELLS_Update(struct CELLS_State *state)
+void cells_update_state(struct cells_state *state)
 {
 	for (int i = 0; i < state->width * state->height; i++)
 	{
 
 		unsigned coordinate = state->updateOrder[i];
 
-		CELLS_UpdateCell(state, state->cells[coordinate]);
+		cells_update_cell(state, state->cells[coordinate]);
 	}
 }
 
-struct CELLS_Cell *CELLS_GetCell(const struct CELLS_State *state, const unsigned x, const unsigned y)
+struct cell *cells_get_cell(const struct cells_state *state, const unsigned x, const unsigned y)
 {
 	if (x >= state->width || y >= state->height)
 		return NULL;
@@ -458,7 +457,7 @@ struct CELLS_Cell *CELLS_GetCell(const struct CELLS_State *state, const unsigned
 	return &state->cells[CELLS_ConvertCoords(state, x, y)];
 }
 
-void CELLS_SetCell(struct CELLS_State *state, const unsigned x, const unsigned y, const struct CELLS_Cell cell)
+void cells_set_cell(struct cells_state *state, const unsigned x, const unsigned y, const struct cell cell)
 {
 	if (x >= state->width || y >= state->height)
 		return;
@@ -466,7 +465,7 @@ void CELLS_SetCell(struct CELLS_State *state, const unsigned x, const unsigned y
 	state->cells[CELLS_ConvertCoords(state, x, y)] = cell;
 }
 
-unsigned CELLS_CountAliveCells(const struct CELLS_State *state)
+unsigned cells_count_alive_cells(const struct cells_state *state)
 {
 	unsigned count = 0;
 
@@ -474,7 +473,7 @@ unsigned CELLS_CountAliveCells(const struct CELLS_State *state)
 	{
 		for (int j = 0; j < state->height; j++)
 		{
-			if (CELLS_GetCell(state, i, j)->alive)
+			if (cells_get_cell(state, i, j)->alive)
 				count++;
 		}
 	}

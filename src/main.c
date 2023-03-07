@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	}
 
 	// initialize the simulation
-	struct CELLS_State *state = CELLS_Init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
+	struct cells_state *state = cells_init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
 	if (state == NULL)
 	{
 		return EXIT_FAILURE;
@@ -160,8 +160,8 @@ int main(int argc, char *argv[])
 
 				case SDLK_r:
 					// re-initialize state, when R is pressed
-					CELLS_Quit(state);
-					state = CELLS_Init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
+					cells_quit(state);
+					state = cells_init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
 					iterations = 0;
 
 					break;
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 					// save map to the file
 					f = fopen("save.bin", "w");
 
-					fwrite(state->cells, sizeof(struct CELLS_Cell), SIMULATION_WIDTH * SIMULATION_HEIGHT, f);
+					fwrite(state->cells, sizeof(struct cell), SIMULATION_WIDTH * SIMULATION_HEIGHT, f);
 
 					fclose(f);
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 					// load map from the file
 					f = fopen("save.bin", "r");
 
-					fread(state->cells, sizeof(struct CELLS_Cell), SIMULATION_WIDTH * SIMULATION_HEIGHT, f);
+					fread(state->cells, sizeof(struct cell), SIMULATION_WIDTH * SIMULATION_HEIGHT, f);
 
 					fclose(f);
 
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 			for (int j = 0; j < SIMULATION_HEIGHT; j++)
 			{
 
-				struct CELLS_Cell *cell = CELLS_GetCell(state, i, j);
+				struct cell *cell = cells_get_cell(state, i, j);
 
 				if (cell->empty)
 					continue;
@@ -251,9 +251,9 @@ int main(int argc, char *argv[])
 					r = 70, g = 70, b = 70;
 				}
 
-				r = CELLS_Clamp(r, 0, 255);
-				g = CELLS_Clamp(g, 0, 255);
-				b = CELLS_Clamp(b, 0, 255);
+				r = util_clamp(r, 0, 255);
+				g = util_clamp(g, 0, 255);
+				b = util_clamp(b, 0, 255);
 
 				SDL_SetRenderDrawColor(ren, r, g, b, 255);
 				SDL_Rect fillRect = {i * CELL_WIDTH, j * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT};
@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 
 		if (!paused)
 		{
-			CELLS_Update(state);
+			cells_update_state(state);
 			iterations++;
 
 			gettimeofday(&frame_end, NULL);
@@ -276,13 +276,13 @@ int main(int argc, char *argv[])
 				fps = 0;
 			}
 
-			printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, CELLS_CountAliveCells(state));
+			printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, cells_count_alive_cells(state));
 		}
 		else
 			SDL_Delay(100); // when on pause, run at 10 frames per second
 	}
 
-	CELLS_Quit(state);
+	cells_quit(state);
 	quit();
 
 	return 0;

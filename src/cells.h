@@ -7,9 +7,8 @@
 
 #define CELLS_ConvertCoords(state, x, y) y * state->width + x
 
-enum CELLS_GenCommand
+enum gen_instruction
 {
-
 	// do nothing
 	NOOP,
 
@@ -61,7 +60,7 @@ enum CELLS_GenCommand
 	MAKE_CHILD
 };
 
-enum CELLS_Direction
+enum direction
 {
 	LEFT,
 	UP,
@@ -69,9 +68,9 @@ enum CELLS_Direction
 	DOWN
 };
 
-struct CELLS_Instruction
+struct instruction
 {
-	enum CELLS_GenCommand command;
+	enum gen_instruction command;
 
 	// those are "arguments" for main instruction
 	unsigned ax; // value from 0 to 128
@@ -80,14 +79,14 @@ struct CELLS_Instruction
 };
 
 // returns randomly generated instruction
-struct CELLS_Instruction CELLS_GenerateInstruction();
+struct instruction cells_generate_instruction();
 
-struct CELLS_Cell
+struct cell
 {
-	struct CELLS_Instruction genome[GENOME_LENGTH];
+	struct instruction genome[GENOME_LENGTH];
 	unsigned currentInstruction;
 
-	enum CELLS_Direction direction;
+	enum direction direction;
 
 	float energy;
 	bool alive;
@@ -107,46 +106,46 @@ struct CELLS_Cell
 };
 
 // returns randomly generated cell
-struct CELLS_Cell CELLS_GenerateCell(const unsigned x, const unsigned y);
+struct cell cells_generate_cell(const unsigned x, const unsigned y);
 
 // returns empty cell
-struct CELLS_Cell CELLS_GenerateEmptyCell(const unsigned x, const unsigned y);
+struct cell cells_generate_empty_cell(const unsigned x, const unsigned y);
 
 // independent cell simulation
-struct CELLS_State
+struct cells_state
 {
 	unsigned width;
 	unsigned height;
 
-	struct CELLS_Cell *cells;
+	struct cell *cells;
 	unsigned *updateOrder;
 };
 
 // updates given cell
-void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell);
+void cells_update_cell(struct cells_state *state, struct cell cell);
 
 // Returns NULL if fails
-struct CELLS_State *CELLS_Init(const unsigned width, const unsigned height);
+struct cells_state *cells_init(const unsigned width, const unsigned height);
 
 // Un-allocates memory and sets state to NULL
-void CELLS_Quit(struct CELLS_State *state);
+void cells_quit(struct cells_state *state);
 
 // Updates the simulation
-void CELLS_Update(struct CELLS_State *state);
+void cells_update_state(struct cells_state *state);
 
 /*
 	Returns cell at given position.
 	If position is invalid, returns NULL
 */
-struct CELLS_Cell *CELLS_GetCell(const struct CELLS_State *state, const unsigned x, const unsigned y);
+struct cell *cells_get_cell(const struct cells_state *state, const unsigned x, const unsigned y);
 
 /*
 	Sets cell at given position.
 	If position or CELLS_Cell pointer is invalid, doesn't do anything
 */
-void CELLS_SetCell(struct CELLS_State *state, const unsigned x, const unsigned y, const struct CELLS_Cell cell);
+void cells_set_cell(struct cells_state *state, const unsigned x, const unsigned y, const struct cell cell);
 
 // returns number of alive cells in given state
-unsigned CELLS_CountAliveCells(const struct CELLS_State *state);
+unsigned cells_count_alive_cells(const struct cells_state *state);
 
 #endif
