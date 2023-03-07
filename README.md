@@ -22,6 +22,7 @@ make
 - S - save simulation to the file ( save.bin by default, but you can change it in main.c )
 - L - load simulation from the file.
 - Space - pause/unpause
+- F - step simulation by one frame
 - R - reload the map
 - 1 - energy rendering more ( more energy - more yellow )
 - 2 - relatives rendering more ( relaives have similar color. it changes a bit with each mutation )

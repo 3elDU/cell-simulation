@@ -170,6 +170,11 @@ int main(int argc, char *argv[])
 					paused = !paused;
 					break;
 
+				// Step by one frame
+				case SDLK_f:
+					cells_update_state(state);
+					break;
+
 				case SDLK_1:
 					currentRenderingMode = RENDER_ENERGY;
 					break;
