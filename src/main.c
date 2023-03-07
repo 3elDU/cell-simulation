@@ -27,19 +27,10 @@ SDL_Texture *loadImage(const char *path)
 	SDL_Texture *texture = NULL;
 
 	SDL_Surface *surf = IMG_Load(path);
-	if (surf == NULL)
-	{
-		printf("IMG_Load() failed with error '%s'. file - %s\n", IMG_GetError(), path);
-		return NULL;
-	}
+	assert(surf);
 
 	SDL_Surface *optimizedSurf = SDL_ConvertSurface(surf, SDL_GetWindowSurface(win)->format, 0);
-	if (optimizedSurf == NULL)
-	{
-		printf("SDL_ConvertSurface() failed with error '%s'\n", SDL_GetError());
-		SDL_FreeSurface(surf);
-		return NULL;
-	}
+	assert(optimizedSurf);
 	SDL_FreeSurface(surf);
 
 	texture = SDL_CreateTextureFromSurface(ren, optimizedSurf);
@@ -51,21 +42,13 @@ SDL_Texture *loadImage(const char *path)
 	return texture;
 }
 
-bool init()
+void init()
 {
 	// init SDL
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-	{
-		printf("SDL_Init() error - %s\n", SDL_GetError());
-		goto failed;
-	}
+	assert(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 
 	int imgFlags = IMG_INIT_PNG;
-	if (IMG_Init(imgFlags) != imgFlags)
-	{
-		printf("Cannot initalize SDL_image - '%s'\n", IMG_GetError());
-		goto failed;
-	}
+	assert(IMG_Init(imgFlags) == imgFlags);
 
 	// create window
 	win = SDL_CreateWindow(
@@ -74,29 +57,14 @@ bool init()
 		SIMULATION_WIDTH * CELL_WIDTH, SIMULATION_HEIGHT * CELL_HEIGHT, // width and height
 		SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE							// flags
 	);
-	if (win == NULL)
-	{
-		printf("SDL_CreateWindow() error - %s\n", SDL_GetError());
-		goto failed;
-	}
+	assert(win);
 
 	// create renderer
 	ren = SDL_CreateRenderer(
 		win,
 		-1,
 		SDL_RENDERER_ACCELERATED);
-	if (ren == NULL)
-	{
-		printf("SDL_CreateRenderer() error - %s\n", SDL_GetError());
-		goto failed;
-	}
-
-	return true;
-
-failed:
-	win = NULL;
-	ren = NULL;
-	return false;
+	assert(ren);
 }
 
 bool quit()
@@ -169,31 +137,19 @@ void render(struct cells_state *state, enum RENDERING_MODE renderingMode)
 
 int main(int argc, char *argv[])
 {
-	// initialize random
 	srand(time(0));
-
-	// init sdl and everything
-	if (!init())
-	{
-		printf("SDL initialization failed\n");
-		return EXIT_FAILURE;
-	}
+	init();
 
 	// initialize the simulation
 	struct cells_state *state = cells_init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
-	if (state == NULL)
-	{
-		return EXIT_FAILURE;
-	}
+	assert(state);
 
 	enum RENDERING_MODE renderingMode = RENDER_RELATIVES;
-
 	long long unsigned iterations = 0;
-
-	// main loop
 	bool exit = false;
 	bool paused = false;
 	struct timeval frame_start, frame_end;
+
 	while (!exit)
 	{
 		// measure time at the beginning of frame

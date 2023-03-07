@@ -59,8 +59,7 @@ struct cell cells_generate_empty_cell(const unsigned x, const unsigned y)
 
 void cells_update_cell(struct cells_state *state, struct cell cell)
 {
-	if (state == NULL)
-		return;
+	assert(state);
 
 	bool suicide = false;
 
@@ -381,23 +380,19 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 	cells_set_cell(state, cell.x, cell.y, cell);
 }
 
-// returns NULL if fails
 struct cells_state *cells_init(const unsigned width, const unsigned height)
 {
 	struct cells_state *state = calloc(1, sizeof(struct cells_state));
-	if (state == NULL)
-		goto failed;
+	assert(state);
 
 	state->width = width;
 	state->height = height;
 
 	state->cells = calloc(width * height, sizeof(struct cell));
-	if (state->cells == NULL)
-		goto failed;
+	assert(state->cells);
 
 	state->updateOrder = calloc(width * height, sizeof(unsigned));
-	if (state->updateOrder == NULL)
-		goto failed;
+	assert(state->updateOrder);
 
 	// fill the map with cells
 	for (int i = 0; i < width; i++)
@@ -421,12 +416,6 @@ struct cells_state *cells_init(const unsigned width, const unsigned height)
 	util_shuffle(state->updateOrder, state->width * state->height, state->width * state->height * 2);
 
 	return state;
-
-failed:
-	free(state->cells);
-	free(state->updateOrder);
-	free(state);
-	return NULL;
 }
 
 void cells_quit(struct cells_state *state)
@@ -442,7 +431,6 @@ void cells_update_state(struct cells_state *state)
 {
 	for (int i = 0; i < state->width * state->height; i++)
 	{
-
 		unsigned coordinate = state->updateOrder[i];
 
 		cells_update_cell(state, state->cells[coordinate]);
