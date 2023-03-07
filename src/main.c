@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 #include <sys/time.h>
 
 #include "cells.h"
@@ -68,7 +69,7 @@ bool init()
 
 	// create window
 	win = SDL_CreateWindow(
-		"hello, world",													// title
+		"Cell simulation",												// title
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,					// x and y position
 		SIMULATION_WIDTH * CELL_WIDTH, SIMULATION_HEIGHT * CELL_HEIGHT, // width and height
 		SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE							// flags
