@@ -249,9 +249,9 @@ int main(int argc, char *argv[])
 					r = 70, g = 70, b = 70;
 				}
 
-				r = CELLS_Clampu(r, 0, 255);
-				g = CELLS_Clampu(g, 0, 255);
-				b = CELLS_Clampu(b, 0, 255);
+				r = CELLS_Clamp(r, 0, 255);
+				g = CELLS_Clamp(g, 0, 255);
+				b = CELLS_Clamp(b, 0, 255);
 
 				SDL_SetRenderDrawColor(ren, r, g, b, 255);
 				SDL_Rect fillRect = {i * CELL_WIDTH, j * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT};

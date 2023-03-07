@@ -340,9 +340,9 @@ void CELLS_UpdateCell(struct CELLS_State *state, struct CELLS_Cell cell)
 						child.genome[i] = cell.genome[i];
 				}
 
-				child.r = CELLS_Clampf(child.r, 0, 255);
-				child.g = CELLS_Clampf(child.g, 0, 255);
-				child.b = CELLS_Clampf(child.b, 0, 255);
+				child.r = CELLS_Clamp(child.r, 0, 255);
+				child.g = CELLS_Clamp(child.g, 0, 255);
+				child.b = CELLS_Clamp(child.b, 0, 255);
 
 				// if there's dead cell at child's position, child gets it's energy
 				if (!CELLS_GetCell(state, facingX, facingY)->alive && !CELLS_GetCell(state, facingX, facingY)->empty)
