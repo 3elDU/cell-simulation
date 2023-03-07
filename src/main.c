@@ -161,6 +161,7 @@ int main(int argc, char *argv[])
 					// re-initialize state, when R is pressed
 					CELLS_Quit(state);
 					state = CELLS_Init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
+					iterations = 0;
 
 					break;
 
