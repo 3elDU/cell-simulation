@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
 			{ // sometimes this happens, fps is reported as -1 for some reason
 				fps = 0;
 			}
-			
-			if (iterations%10 == 0)
+
+			if (iterations % 10 == 0)
 				printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, cells_count_alive_cells(state));
 		}
 		else
