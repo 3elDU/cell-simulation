@@ -23,6 +23,7 @@ make
 - L - load simulation from the file.
 - Space - pause/unpause
 - F - step simulation by one frame
+- H - toggle headless mode ( don't render anything )
 - R - reload the map
 - 1 - energy rendering more ( more energy - more yellow )
 - 2 - relatives rendering more ( relaives have similar color. it changes a bit with each mutation )

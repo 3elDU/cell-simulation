@@ -148,6 +148,7 @@ int main(int argc, char *argv[])
 	long long unsigned iterations = 0;
 	bool exit = false;
 	bool paused = false;
+	bool headless = false;
 	struct timeval frame_start, frame_end;
 
 	while (!exit)
@@ -180,6 +181,10 @@ int main(int argc, char *argv[])
 
 				case SDLK_SPACE:
 					paused = !paused;
+					break;
+
+				case SDLK_h:
+					headless = !headless;
 					break;
 
 				// Step by one frame
@@ -227,7 +232,8 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		render(state, renderingMode);
+		if (!headless)
+			render(state, renderingMode);
 
 		if (!paused)
 		{
@@ -240,8 +246,9 @@ int main(int argc, char *argv[])
 			{ // sometimes this happens, fps is reported as -1 for some reason
 				fps = 0;
 			}
-
-			printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, cells_count_alive_cells(state));
+			
+			if (iterations%10 == 0)
+				printf("[ iteration %llu ] [ fps %d ] Alive cells: %u\n", iterations, fps, cells_count_alive_cells(state));
 		}
 		else
 			SDL_Delay(100); // when on pause, run at 10 frames per second
