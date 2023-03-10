@@ -96,7 +96,7 @@ void render(struct cells_state *state, enum RENDERING_MODE renderingMode)
 			if (cell->empty)
 				continue;
 
-			unsigned r, g, b;
+			unsigned r = 0, g = 0, b = 0;
 
 			if (cell->alive)
 			{
@@ -104,9 +104,12 @@ void render(struct cells_state *state, enum RENDERING_MODE renderingMode)
 				if (renderingMode == RENDER_RELATIVES)
 					r = cell->r, g = cell->g, b = cell->b;
 				else if (renderingMode == RENDER_ENERGY)
-					r = 30 + cell->energy, g = r, b = 0;
+				{
+					float energy = cell->energy / (REPRODUCTION_REQUIRED_ENERGY * 2) * 255.f;
+					r = energy, g = energy;
+				}
 				else if (renderingMode == RENDER_AGE)
-					r = 0, g = 0, b = 50 + 255.f * ((float)cell->age / (float)CELL_MAX_AGE);
+					b = 50 + 255.f * ((float)cell->age / (float)CELL_MAX_AGE);
 				else if (renderingMode == RENDER_ENERGY_SOURCE)
 				{
 					float max_value = util_max(3, (float[]){cell->photosynthesisCount, cell->attackCount, cell->eatingDeadCount});

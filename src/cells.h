@@ -17,27 +17,25 @@ enum gen_instruction
 	TURN_RIGHT,
 	MOVE_FORWARDS,
 
-	// swaps with cell in front
-	SWAP_PLACES,
-
-	// generates 5 energy
 	PHOTOSYNTHESIS,
 
+	// gives e energy to cell in front
+	GIVE_ENERGY,
+
 	// attacks cell in front
+	// if cell class is hunter cell, it kills the cell immediately
 	ATTACK_CELL,
 
-	// kills the cell in front, but gets 2x less energy than by attacking
-	// available only for "hunter" cells
-	KILL_CELL,
+	// eats dead cell in front
+	RECYCLE_DEAD_CELL,
 
-	// jump to instruction BX
-	JMP,
+	// jump to instruction b1 if cell has more than e energy
+	// otherwise, jump to instruction b2
+	CHECK_ENERGY,
 
-	// jump to instruction BX, if energy is less than AX
-	JMP_IF_LESS,
-
-	// jump to instruction BX, if energy is greater than AX
-	JMP_IF_GREATER,
+	// if left -> b1
+	// if right ->
+	CHECK_ROTATION,
 
 	// jump to instruction BX, if there's alive cell in front
 	JMP_IF_FACING_ALIVE_CELL,
@@ -51,21 +49,24 @@ enum gen_instruction
 	// if cell's genome is at least CX% similar to other's cell genome, jumping to instruction bx
 	JMP_IF_FACING_RELATIVE,
 
-	// leaves dead cell on the ground.
-	// dead cell contains AX percents of cell's energy
-	SUICIDE,
-
 	// works, if cell has more than REPRODUCTION_REQUIRED_ENERGY energy
-	// cell gives the child CX percents of it's own energy
 	MAKE_CHILD
 };
 
 enum direction
 {
 	LEFT,
-	UP,
 	RIGHT,
-	DOWN
+	UP,
+	DOWN,
+};
+
+enum cell_food_source
+{
+	FOOD_SOURCE_PHOTOSYNTHESIS,
+	FOOD_SOURCE_MEAT,
+	FOOD_SOURCE_DEAD_CELLS,
+	FOOD_SOURCE_UNKNOWN,
 };
 
 struct instruction
@@ -73,9 +74,18 @@ struct instruction
 	enum gen_instruction command;
 
 	// those are "arguments" for main instruction
-	unsigned ax; // value from 0 to 128
-	unsigned bx; // value from 0 to 63
-	float cx;	 // floating point value from 0.0 to 100.0
+	// opt is a boolean. in some instructions, alters it
+	// e stores energy from 0 to REPRODUCTION_REQUIRED_ENERGY, and is used in JMP_IF_LESS/JMP_IF_GREATER
+	// b1 and b2 are branches for JMP instructions
+	// b3 and b4 are branches for CHECK_ROTATION
+	// if the JMP condition is true, jumps to instruction b1
+	// otherwise, to instruction b2
+	bool opt;
+	uint8_t e;	// energy condition
+	uint8_t b1; // branch 1
+	uint8_t b2; // branch 2
+	uint8_t b3; // branch 3
+	uint8_t b4; // branch 4
 };
 
 // returns randomly generated instruction
@@ -147,5 +157,7 @@ void cells_set_cell(struct cells_state *state, const unsigned x, const unsigned 
 
 // returns number of alive cells in given state
 unsigned cells_count_alive_cells(const struct cells_state *state);
+
+enum cell_food_source cells_get_cell_food_source(struct cell cell);
 
 #endif

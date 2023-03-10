@@ -11,9 +11,12 @@ struct instruction cells_generate_instruction()
 
 	instruction.command = util_random(0, MAKE_CHILD);
 
-	instruction.ax = util_random(0, 128);
-	instruction.bx = util_random(0, 63);
-	instruction.cx = util_random(0, 100000) / 1000.f;
+	instruction.opt = rand() > RAND_MAX / 2;
+	instruction.e = util_random(0, REPRODUCTION_REQUIRED_ENERGY * 2);
+	instruction.b1 = util_random(0, GENOME_LENGTH);
+	instruction.b2 = util_random(0, GENOME_LENGTH);
+	instruction.b3 = util_random(0, GENOME_LENGTH);
+	instruction.b4 = util_random(0, GENOME_LENGTH);
 
 	return instruction;
 }
@@ -61,24 +64,28 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 {
 	assert(state);
 
-	bool suicide = false;
-
 	if (!cell.alive)
 		return;
 
+	struct instruction currentInstruction = cell.genome[cell.currentInstruction];
 	unsigned nextInstruction = cell.currentInstruction + 1;
 	float consumedEnergy = NOOP_COST;
 
 	int facingX = cell.x, facingY = cell.y;
-
-	if (cell.direction == LEFT)
-		facingX--;
-	else if (cell.direction == RIGHT)
-		facingX++;
-	else if (cell.direction == UP)
-		facingY--;
-	else if (cell.direction == DOWN)
-		facingY++;
+	switch (cell.direction)
+	{
+	case LEFT:
+		facingX = cell.x - 1;
+		break;
+	case RIGHT:
+		facingX = cell.x + 1;
+		break;
+	case UP:
+		facingY = cell.y - 1;
+		break;
+	case DOWN:
+		facingY = cell.y + 1;
+	}
 
 	if (facingX == -1)
 		facingX = state->width - 1;
@@ -103,7 +110,7 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 		else
 			cell.direction--;
 
-		consumedEnergy += MOVEMENT_COST * 0.5f;
+		consumedEnergy += TURN_COST;
 		break;
 
 	case TURN_RIGHT:
@@ -112,7 +119,7 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 		else
 			cell.direction++;
 
-		consumedEnergy += MOVEMENT_COST * 0.5f;
+		consumedEnergy += TURN_COST;
 		break;
 
 	case MOVE_FORWARDS:
@@ -120,36 +127,11 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 		// if it is not, cell won't move
 		if (cells_get_cell(state, facingX, facingY)->empty)
 		{
-
 			cells_set_cell(state, cell.x, cell.y, cells_generate_empty_cell(cell.x, cell.y));
 			cell.x = facingX, cell.y = facingY;
-		}
-		else if (!cells_get_cell(state, facingX, facingY)->alive)
-		{
-			// if space, where cell wants to move is occupied by dead cell, eating it
-			cell.energy += cells_get_cell(state, facingX, facingY)->energy;
-
-			cells_set_cell(state, cell.x, cell.y, cells_generate_empty_cell(cell.x, cell.y));
-			cell.x = facingX, cell.y = facingY;
-
-			cell.eatingDeadCount++;
 		}
 
 		consumedEnergy += MOVEMENT_COST;
-
-		break;
-
-	case SWAP_PLACES:
-		frontCell = cells_get_cell(state, facingX, facingY);
-
-		frontCell->x = cell.x;
-		frontCell->y = cell.y;
-
-		cells_set_cell(state, cell.x, cell.y, *frontCell);
-
-		cell.x = facingX, cell.y = facingY;
-
-		consumedEnergy += MOVEMENT_COST * 2;
 
 		break;
 
@@ -163,8 +145,22 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 
 		break;
 
+	case GIVE_ENERGY:
+		frontCell = cells_get_cell(state, facingX, facingY);
+
+		if (!frontCell->alive || frontCell->empty)
+			break;
+
+		float energyToGive = currentInstruction.e;
+		if (energyToGive > cell.energy)
+			energyToGive = cell.energy;
+
+		frontCell->energy += energyToGive;
+		consumedEnergy += energyToGive;
+
+		break;
+
 	case ATTACK_CELL:
-		// requires at least 10 energy
 		if (cell.energy < ATTACK_REQUIRED_ENERGY)
 		{
 			break;
@@ -174,84 +170,92 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 
 		frontCell = cells_get_cell(state, facingX, facingY);
 
-		if (frontCell->alive)
+		if (!frontCell->alive)
+			break;
+
+		float takenEnergy;
+
+		enum cell_food_source food_source = cells_get_cell_food_source(cell);
+
+		if (food_source == FOOD_SOURCE_MEAT)
 		{
-
-			unsigned takenEnergy;
-
-			if (cell.photosynthesisCount > cell.attackCount)
-				takenEnergy = frontCell->energy * (ATTACK_ENERGY * 0.01f) * 0.25f;
+			// if option is true, kill the cell in fromt
+			if (currentInstruction.opt)
+			{
+				cell.energy -= ATTACK_REQUIRED_ENERGY;
+				takenEnergy = frontCell->energy * ATTACK_ENERGY;
+				frontCell->alive = false;
+				// cells_set_cell(state, facingX, facingY, cells_generate_empty_cell(facingX, facingY));
+			}
 			else
-				takenEnergy = frontCell->energy * (ATTACK_ENERGY * 0.01f) * 0.5f;
-
-			frontCell->energy *= 0.25f;
-
-			cell.energy += takenEnergy;
+				takenEnergy = frontCell->energy * ATTACK_ENERGY;
 		}
+		else
+			takenEnergy = frontCell->energy * (ATTACK_ENERGY / 2.f);
+
+		frontCell->energy -= takenEnergy * 1.5f;
+		cell.energy += takenEnergy;
 
 		cell.attackCount++;
 
 		break;
 
-	case KILL_CELL:
-		// requires at least 10 energy
-		if (cell.energy < ATTACK_REQUIRED_ENERGY || cell.attackCount < cell.photosynthesisCount)
-		{
-			break;
-		}
-
-		cell.energy -= ATTACK_REQUIRED_ENERGY;
-
+	case RECYCLE_DEAD_CELL:
 		frontCell = cells_get_cell(state, facingX, facingY);
 
-		if (frontCell->alive)
+		if (frontCell->empty || frontCell->alive)
+			break;
+
+		cells_set_cell(state, facingX, facingY, cells_generate_empty_cell(facingX, facingY));
+		consumedEnergy -= frontCell->energy;
+		cell.eatingDeadCount++;
+
+		break;
+
+	case CHECK_ENERGY:
+		if (cell.energy > currentInstruction.e)
+			nextInstruction = currentInstruction.b1;
+		else
+			nextInstruction = currentInstruction.b2;
+
+		break;
+
+	case CHECK_ROTATION:
+		switch (cell.direction)
 		{
-
-			unsigned takenEnergy;
-
-			takenEnergy = frontCell->energy * (ATTACK_ENERGY * 0.01f) * 0.8f;
-
-			frontCell->energy = 0;
-			frontCell->alive = false;
-
-			cell.energy += takenEnergy;
+		case LEFT:
+			nextInstruction = currentInstruction.b1;
+		case RIGHT:
+			nextInstruction = currentInstruction.b2;
+		case UP:
+			nextInstruction = currentInstruction.b3;
+		case DOWN:
+			nextInstruction = currentInstruction.b4;
 		}
-
-		cell.attackCount++;
-
-		break;
-
-	case JMP:
-		nextInstruction = cell.genome[cell.currentInstruction].bx;
-		break;
-
-	case JMP_IF_LESS:
-		if (cell.energy < cell.genome[cell.currentInstruction].ax)
-			nextInstruction = cell.genome[cell.currentInstruction].bx;
-
-		break;
-
-	case JMP_IF_GREATER:
-		if (cell.energy > cell.genome[cell.currentInstruction].ax)
-			nextInstruction = cell.genome[cell.currentInstruction].bx;
 
 		break;
 
 	case JMP_IF_FACING_ALIVE_CELL:
 		if (cells_get_cell(state, facingX, facingY)->alive)
-			nextInstruction = cell.genome[cell.currentInstruction].bx;
+			nextInstruction = currentInstruction.b1;
+		else
+			nextInstruction = currentInstruction.b2;
 
 		break;
 
 	case JMP_IF_FACING_VOID:
 		if (cells_get_cell(state, facingX, facingY)->empty)
-			nextInstruction = cell.genome[cell.currentInstruction].bx;
+			nextInstruction = currentInstruction.b1;
+		else
+			nextInstruction = currentInstruction.b2;
 
 		break;
 
 	case JMP_IF_FACING_DEAD_CELL:
 		if (!cells_get_cell(state, facingX, facingY)->alive && !cells_get_cell(state, facingX, facingY)->empty)
-			nextInstruction = cell.genome[cell.currentInstruction].bx;
+			nextInstruction = currentInstruction.b1;
+		else
+			nextInstruction = currentInstruction.b2;
 
 		break;
 
@@ -266,92 +270,88 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 		for (int i = 0; i < GENOME_LENGTH; i++)
 		{
 
-			if (ours[i].command == theirs[i].command &&
-				ours[i].ax == theirs[i].ax &&
-				ours[i].bx == theirs[i].bx &&
-				ours[i].cx == theirs[i].cx)
+			if (ours[i].command == theirs[i].command)
 				similarGenes++;
 		}
 
-		float genomeSimilarity = similarGenes * (100.f / GENOME_LENGTH);
-
-		if (genomeSimilarity >= cell.genome[cell.currentInstruction].cx)
-			nextInstruction = cell.genome[cell.currentInstruction].bx;
-
-		// printf("%u similar genes, %f similarity, required %f\n", similarGenes, genomeSimilarity, cell.genome[cell.currentInstruction].cx);
+		// If at least GENOME_LENGTH-1 genes the same, treat cells as relatives
+		if (similarGenes >= GENOME_LENGTH - 1)
+			nextInstruction = currentInstruction.b1;
+		else
+			nextInstruction = currentInstruction.b2;
 
 		break;
 	}
-
-	case SUICIDE:
-		suicide = true;
-		break;
 
 	case MAKE_CHILD:
 		// skipping instruction, if cell doesn't have enough energy
 		if (cell.energy < REPRODUCTION_REQUIRED_ENERGY)
 			break;
 
-		// checking for available space
-		if (!cells_get_cell(state, facingX, facingY)->alive)
+		if (!cells_get_cell(state, facingX, facingY)->empty)
+			break;
+
+		struct cell child = {};
+
+		child.alive = true;
+		child.empty = false;
+
+		child.x = facingX;
+		child.y = facingY;
+
+		child.age = 1;
+
+		child.direction = util_random(0, 3);
+
+		child.r = cell.r, child.g = cell.g, child.b = cell.b;
+
+		child.energy = START_ENERGY;
+
+		// printf("Child energy %f; New parent energy %f\n", child.energy, cell.energy);
+
+		memcpy(child.genome, cell.genome, sizeof(child.genome));
+
+		// mutation can happen
+		if (util_random(1, 100) <= MUTATION_PERCENT)
 		{
+			unsigned geneToMutate = util_random(0, GENOME_LENGTH - 1);
 
-			struct cell child = {};
+			child.genome[geneToMutate].command = util_random(0, MAKE_CHILD);
+			child.genome[geneToMutate].opt = rand() > (RAND_MAX / 2);
+			child.genome[geneToMutate].e += util_random(-3, 3);
+			child.genome[geneToMutate].b1 += util_random(-2, 2);
+			child.genome[geneToMutate].b2 += util_random(-2, 2);
+			child.genome[geneToMutate].b3 += util_random(-2, 2);
+			child.genome[geneToMutate].b4 += util_random(-2, 2);
 
-			child.alive = true;
-			child.empty = false;
+			child.genome[geneToMutate].e = util_clamp(child.genome[geneToMutate].e, 0, REPRODUCTION_REQUIRED_ENERGY);
+			child.genome[geneToMutate].b1 = util_clamp(child.genome[geneToMutate].e, 0, GENOME_LENGTH - 1);
+			child.genome[geneToMutate].b2 = util_clamp(child.genome[geneToMutate].e, 0, GENOME_LENGTH - 1);
+			child.genome[geneToMutate].b3 = util_clamp(child.genome[geneToMutate].e, 0, GENOME_LENGTH - 1);
+			child.genome[geneToMutate].b4 = util_clamp(child.genome[geneToMutate].e, 0, GENOME_LENGTH - 1);
 
-			child.x = facingX;
-			child.y = facingY;
+			// changing child's color a bit
+			unsigned colorToChange = util_random(0, 2);
 
-			child.age = 1;
-
-			child.direction = util_random(0, 3);
-
-			child.r = cell.r, child.g = cell.g, child.b = cell.b;
-
-			// giving CX percents of cell's own energy to the child
-			child.energy = cell.energy * (cell.genome[cell.currentInstruction].cx / 100.f);
-			cell.energy *= 1 - cell.genome[cell.currentInstruction].cx / 100.f;
-
-			// printf("Child energy %f; New parent energy %f\n", child.energy, cell.energy);
-
-			// copying parent genome to the child
-			for (int i = 0; i < GENOME_LENGTH; i++)
-			{
-
-				// mutation can happen
-				if (util_random(1, 100) <= MUTATION_PERCENT)
-				{
-					// mutating
-					child.genome[i] = cells_generate_instruction();
-
-					// changing child's color a bit
-					unsigned colorToChange = util_random(0, 2);
-
-					if (colorToChange == 0)
-						child.r += util_random(-16, 16);
-					if (colorToChange == 1)
-						child.g += util_random(-16, 16);
-					if (colorToChange == 2)
-						child.b += util_random(-16, 16);
-				}
-				else
-					child.genome[i] = cell.genome[i];
-			}
-
-			child.r = util_clamp(child.r, 0, 255);
-			child.g = util_clamp(child.g, 0, 255);
-			child.b = util_clamp(child.b, 0, 255);
-
-			// if there's dead cell at child's position, child gets it's energy
-			if (!cells_get_cell(state, facingX, facingY)->alive && !cells_get_cell(state, facingX, facingY)->empty)
-			{
-				child.energy += cells_get_cell(state, facingX, facingY)->energy;
-			}
-
-			cells_set_cell(state, facingX, facingY, child);
+			if (colorToChange == 0)
+				child.r += util_random(-16, 16);
+			if (colorToChange == 1)
+				child.g += util_random(-16, 16);
+			if (colorToChange == 2)
+				child.b += util_random(-16, 16);
 		}
+
+		child.r = util_clamp(child.r, 0, 255);
+		child.g = util_clamp(child.g, 0, 255);
+		child.b = util_clamp(child.b, 0, 255);
+
+		// if there's dead cell at child's position, child gets it's energy
+		if (!cells_get_cell(state, facingX, facingY)->alive && !cells_get_cell(state, facingX, facingY)->empty)
+		{
+			child.energy += cells_get_cell(state, facingX, facingY)->energy;
+		}
+
+		cells_set_cell(state, facingX, facingY, child);
 
 		break;
 
@@ -360,19 +360,14 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 	}
 
 	if (nextInstruction >= GENOME_LENGTH)
-		nextInstruction = 0;
+		nextInstruction %= GENOME_LENGTH;
 	cell.currentInstruction = nextInstruction;
 
 	cell.energy -= consumedEnergy;
 
-	// cell can die because of age
-	if (cell.age > CELL_MAX_AGE)
-		suicide = true;
-
-	if (cell.energy <= 0 || suicide)
+	if (cell.age > CELL_MAX_AGE || cell.energy < 0)
 	{
 		cell.alive = false;
-		cell.energy *= 0.8;
 	}
 
 	cell.age++;
@@ -467,4 +462,26 @@ unsigned cells_count_alive_cells(const struct cells_state *state)
 	}
 
 	return count;
+}
+
+enum cell_food_source cells_get_cell_food_source(struct cell cell)
+{
+	float max = util_max(3, (float[]){cell.photosynthesisCount, cell.attackCount, cell.eatingDeadCount});
+
+	if (max == cell.photosynthesisCount)
+	{
+		return FOOD_SOURCE_PHOTOSYNTHESIS;
+	}
+	else if (max == cell.attackCount)
+	{
+		return FOOD_SOURCE_MEAT;
+	}
+	else if (max == cell.eatingDeadCount)
+	{
+		return FOOD_SOURCE_DEAD_CELLS;
+	}
+	else
+	{
+		return FOOD_SOURCE_UNKNOWN;
+	}
 }
