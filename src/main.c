@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 	enum RENDERING_MODE renderingMode = RENDER_RELATIVES;
 	long long unsigned iterations = 0;
 	bool exit = false;
-	bool paused = false;
+	bool paused = true;
 	bool headless = false;
 	struct timeval frame_start, frame_end;
 
