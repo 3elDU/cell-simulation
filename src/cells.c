@@ -375,24 +375,18 @@ void cells_update_cell(struct cells_state *state, struct cell cell)
 	cells_set_cell(state, cell.x, cell.y, cell);
 }
 
-struct cells_state *cells_init(const unsigned width, const unsigned height)
+struct cells_state *cells_init()
 {
 	struct cells_state *state = calloc(1, sizeof(struct cells_state));
 	assert(state);
 
-	state->width = width;
-	state->height = height;
-
-	state->cells = calloc(width * height, sizeof(struct cell));
-	assert(state->cells);
-
-	state->updateOrder = calloc(width * height, sizeof(unsigned));
-	assert(state->updateOrder);
+	state->width = SIMULATION_HEIGHT;
+	state->height = SIMULATION_HEIGHT;
 
 	// fill the map with cells
-	for (int i = 0; i < width; i++)
+	for (int i = 0; i < SIMULATION_WIDTH; i++)
 	{
-		for (int j = 0; j < height; j++)
+		for (int j = 0; j < SIMULATION_HEIGHT; j++)
 		{
 
 			// every 5th pixel has a cell in it
@@ -403,20 +397,11 @@ struct cells_state *cells_init(const unsigned width, const unsigned height)
 		}
 	}
 
-	// generate random update order
-	for (int i = 0; i < state->width * state->height; i++)
-	{
-		state->updateOrder[i] = i;
-	}
-	util_shuffle(state->updateOrder, state->width * state->height, state->width * state->height * 2);
-
 	return state;
 }
 
 void cells_quit(struct cells_state *state)
 {
-	free(state->cells);
-	free(state->updateOrder);
 	free(state);
 
 	state = NULL;
@@ -424,20 +409,21 @@ void cells_quit(struct cells_state *state)
 
 void cells_update_state(struct cells_state *state)
 {
-	for (int i = 0; i < state->width * state->height; i++)
+	for (int i = 0; i < state->width; i++)
 	{
-		unsigned coordinate = state->updateOrder[i];
-
-		cells_update_cell(state, state->cells[coordinate]);
+		for (int j = 0; j < state->height; j++)
+		{
+			cells_update_cell(state, state->cells[i][j]);
+		}
 	}
 }
 
-struct cell *cells_get_cell(const struct cells_state *state, const unsigned x, const unsigned y)
+struct cell *cells_get_cell(struct cells_state *state, const unsigned x, const unsigned y)
 {
 	if (x >= state->width || y >= state->height)
 		return NULL;
 
-	return &state->cells[CELLS_ConvertCoords(state, x, y)];
+	return &state->cells[x][y];
 }
 
 void cells_set_cell(struct cells_state *state, const unsigned x, const unsigned y, const struct cell cell)
@@ -445,10 +431,10 @@ void cells_set_cell(struct cells_state *state, const unsigned x, const unsigned 
 	if (x >= state->width || y >= state->height)
 		return;
 
-	state->cells[CELLS_ConvertCoords(state, x, y)] = cell;
+	state->cells[x][y] = cell;
 }
 
-unsigned cells_count_alive_cells(const struct cells_state *state)
+unsigned cells_count_alive_cells(struct cells_state *state)
 {
 	unsigned count = 0;
 

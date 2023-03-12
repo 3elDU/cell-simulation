@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include "defines.h"
 
-#define CELLS_ConvertCoords(state, x, y) y * state->width + x
-
 enum gen_instruction
 {
 	// do nothing
@@ -127,15 +125,13 @@ struct cells_state
 	unsigned width;
 	unsigned height;
 
-	struct cell *cells;
-	unsigned *updateOrder;
+	struct cell cells[SIMULATION_WIDTH][SIMULATION_HEIGHT];
 };
 
 // updates given cell
 void cells_update_cell(struct cells_state *state, struct cell cell);
 
-// Returns NULL if fails
-struct cells_state *cells_init(const unsigned width, const unsigned height);
+struct cells_state *cells_init();
 
 // Un-allocates memory and sets state to NULL
 void cells_quit(struct cells_state *state);
@@ -147,7 +143,7 @@ void cells_update_state(struct cells_state *state);
 	Returns cell at given position.
 	If position is invalid, returns NULL
 */
-struct cell *cells_get_cell(const struct cells_state *state, const unsigned x, const unsigned y);
+struct cell *cells_get_cell(struct cells_state *state, const unsigned x, const unsigned y);
 
 /*
 	Sets cell at given position.
@@ -156,7 +152,7 @@ struct cell *cells_get_cell(const struct cells_state *state, const unsigned x, c
 void cells_set_cell(struct cells_state *state, const unsigned x, const unsigned y, const struct cell cell);
 
 // returns number of alive cells in given state
-unsigned cells_count_alive_cells(const struct cells_state *state);
+unsigned cells_count_alive_cells(struct cells_state *state);
 
 enum cell_food_source cells_get_cell_food_source(struct cell cell);
 
