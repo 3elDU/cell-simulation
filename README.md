@@ -25,6 +25,8 @@ make
 - F - step simulation by one frame
 - H - toggle headless mode ( don't render anything )
 - R - reload the map
+- Left mouse button on the cell to save it to the file
+- Right mouse button to load cell from the file ( enter filename in the terminal )
 - 1 - energy rendering more ( more energy - more yellow )
 - 2 - relatives rendering more ( relaives have similar color. it changes a bit with each mutation )
 - 3 - age rendering mode ( more age - more blue )

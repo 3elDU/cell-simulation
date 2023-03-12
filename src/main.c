@@ -53,9 +53,9 @@ void init()
 	// create window
 	win = SDL_CreateWindow(
 		"Cell simulation",												// title
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,					// x and y position
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,				// x and y position
 		SIMULATION_WIDTH * CELL_WIDTH, SIMULATION_HEIGHT * CELL_HEIGHT, // width and height
-		SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE							// flags
+		0																// flags
 	);
 	assert(win);
 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 	init();
 
 	// initialize the simulation
-	struct cells_state *state = cells_init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
+	struct cells_state *state = cells_init();
 	assert(state);
 
 	enum RENDERING_MODE renderingMode = RENDER_RELATIVES;
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 				case SDLK_r:
 					// re-initialize state, when R is pressed
 					cells_quit(state);
-					state = cells_init(SIMULATION_WIDTH, SIMULATION_HEIGHT);
+					state = cells_init();
 					iterations = 0;
 
 					break;
@@ -227,6 +227,57 @@ int main(int argc, char *argv[])
 					fread(state->cells, sizeof(struct cell), SIMULATION_WIDTH * SIMULATION_HEIGHT, f);
 
 					fclose(f);
+
+				default:
+					break;
+				}
+			}
+			else if (e.type == SDL_MOUSEBUTTONDOWN)
+			{
+				const int sx = e.button.x / CELL_WIDTH;
+				const int sy = e.button.y / CELL_HEIGHT;
+
+				switch (e.button.button)
+				{
+					struct cell cell;
+					char filename[128];
+					FILE *fp;
+
+				case SDL_BUTTON_MIDDLE:
+					cells_set_cell(state, sx, sy, cells_generate_cell(sx, sy));
+					break;
+
+				case SDL_BUTTON_LEFT:
+					time_t t = time(NULL);
+					snprintf(filename, 127, "cell_%ld", t);
+
+					fp = fopen(filename, "w");
+					assert(fp);
+
+					cell = *cells_get_cell(state, sx, sy);
+					assert(fwrite(&cell, sizeof(cell), 1, fp));
+
+					fclose(fp);
+
+					printf("Saved cell at (%d, %d) to \"%s\"\n", sx, sy, filename);
+
+					break;
+
+				case SDL_BUTTON_RIGHT:
+					scanf("%127s", filename);
+
+					fp = fopen(filename, "r");
+					assert(fp);
+
+					assert(fread(&cell, sizeof(cell), 1, fp));
+					cell.x = sx, cell.y = sy;
+					cells_set_cell(state, sx, sy, cell);
+
+					fclose(fp);
+
+					printf("Loaded cell to (%d, %d) from \"%s\"\n", sx, sy, filename);
+
+					break;
 
 				default:
 					break;
